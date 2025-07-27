@@ -1,0 +1,74 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  hashedPassword String
+  name           String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  projects        Project[]
+  tasks           Task[]
+  pomodoroSessions PomodoroSession[]
+}
+
+model Project {
+  id                String    @id @default(cuid())
+  name              String
+  color             String    @default("#000000")
+  targetPomodoros   Int       @default(0)
+  userId            String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks             Task[]
+  pomodoroSessions  PomodoroSession[]
+}
+
+model Task {
+  id                String    @id @default(cuid())
+  title             String
+  description       String?
+  status            String    @default("pending") // pending, in_progress, completed
+  estimatedPomodoros Int      @default(1)
+  completedPomodoros Int      @default(0)
+  projectId         String
+  userId            String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  completedAt       DateTime?
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project           Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  pomodoroSessions  PomodoroSession[]
+}
+
+model PomodoroSession {
+  id                String    @id @default(cuid())
+  type              String    @default("work") // work, break
+  duration          Int       @default(25) // minutes
+  startedAt         DateTime  @default(now())
+  pausedAt          DateTime?
+  completedAt       DateTime?
+  taskId            String?
+  projectId         String
+  userId            String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project           Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task              Task?     @relation(fields: [taskId], references: [id], onDelete: SetNull)
+}
