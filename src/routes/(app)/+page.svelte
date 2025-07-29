@@ -213,7 +213,7 @@
 							<div class="p-4 border rounded-lg">
 								<div class="flex justify-between items-start">
 									<div class="flex-1">
-										<h3 class="font-semibold">{task.title}</h3>
+										<h3 class="font-semibold" class:line-through={task.status === 'canceled'} class:text-gray-400={task.status === 'canceled'}>{task.title}</h3>
 										{#if task.description}
 											<p class="text-sm text-gray-600 mt-1">{task.description}</p>
 										{/if}
@@ -227,10 +227,10 @@
 										</div>
 									</div>
 									<div class="flex items-center space-x-2">
-										{#if task.status !== 'completed' && !activeSession}
+									{#if task.status !== 'completed' && task.status !== 'canceled' && !activeSession}
 											<form method="POST" action="?/startPomodoro" use:enhance>
 												<input type="hidden" name="taskId" value={task.id} />
-												<button
+										<button
 													type="submit"
 													class="text-green-600 hover:text-green-900"
 												>
@@ -244,9 +244,20 @@
 												type="submit"
 												class="text-indigo-600 hover:text-indigo-900"
 											>
-												{task.status === 'completed' ? '未完了に戻す' : '完了'}
+											{task.status === 'completed' || task.status === 'canceled' ? '未完了に戻す' : '完了'}
 											</button>
-										</form>
+									</form>
+									{#if task.status !== 'completed' && task.status !== 'canceled'}
+									<form method="POST" action="?/cancelTask" use:enhance>
+										<input type="hidden" name="taskId" value={task.id} />
+										<button
+											type="submit"
+											class="text-red-600 hover:text-red-900"
+										>
+											中止
+										</button>
+									</form>
+									{/if}
 									</div>
 								</div>
 							</div>
