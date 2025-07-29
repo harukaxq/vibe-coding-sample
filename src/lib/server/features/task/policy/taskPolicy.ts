@@ -2,12 +2,13 @@ import type { Task, TaskStatus } from '../core/task';
 
 export function canTransitionStatus(currentStatus: TaskStatus, newStatus: TaskStatus): boolean {
   const validTransitions: Record<TaskStatus, TaskStatus[]> = {
-    pending: ['in_progress'],
-    in_progress: ['pending', 'completed'],
-    completed: ['pending'],
+    pending: ['in_progress', 'canceled'],
+    in_progress: ['pending', 'completed', 'canceled'],
+    completed: ['pending', 'canceled'],
+    canceled: ['pending']
   };
 
-  return validTransitions[currentStatus].includes(newStatus);
+  return validTransitions[currentStatus]?.includes(newStatus) ?? false;
 }
 
 export function shouldUpdateCompletedAt(task: Task, newStatus: TaskStatus): boolean {
