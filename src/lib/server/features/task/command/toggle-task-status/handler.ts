@@ -23,7 +23,7 @@ export async function toggleTaskStatus(input: ToggleTaskStatusCommandInput): Pro
   }
 
   // ステータスのトグル
-  const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+  const newStatus = (task.status === 'completed' || task.status === 'canceled') ? 'pending' : 'completed';
   const completedAt = newStatus === 'completed' ? new Date() : undefined;
 
   // タスクの更新

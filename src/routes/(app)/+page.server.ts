@@ -6,6 +6,7 @@ import { createTaskWithProject } from '$lib/server/flows/create-task-with-projec
 import { toggleTaskStatus } from '$lib/server/features/task/command/toggle-task-status/handler';
 import { startPomodoroForTask } from '$lib/server/flows/start-pomodoro-for-task/handler';
 import { completeSession } from '$lib/server/features/pomodoro-session/command/complete-session/handler';
+import { cancelTask } from '$lib/server/features/task/command/cancel-task/handler';
 import { PomodoroSessionRepositoryPrisma } from '$lib/server/adapter/repository/pomodoroSessionRepository.prisma';
 import { fail } from '@sveltejs/kit';
 import { getAuthUser } from '$lib/server/auth';
@@ -93,6 +94,24 @@ export const actions: Actions = {
 
 		try {
 			await toggleTaskStatus({ taskId, userId });
+			return { success: true };
+		} catch (error) {
+			if (error instanceof Error) {
+				return fail(400, { error: error.message });
+			}
+			throw error;
+		}
+	},
+	cancelTask: async (event) => {
+		const user = await getAuthUser(event);
+		if (!user) return fail(401, { error: '認証が必要です' });
+
+		const data = await event.request.formData();
+		const taskId = data.get('taskId') as string;
+		const userId = user.id;
+
+		try {
+			await cancelTask({ taskId, userId });
 			return { success: true };
 		} catch (error) {
 			if (error instanceof Error) {
