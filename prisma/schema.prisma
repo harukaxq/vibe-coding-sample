@@ -41,7 +41,7 @@ model Task {
   id                String    @id @default(cuid())
   title             String
   description       String?
-  status            String    @default("pending") // pending, in_progress, completed
+  status            String    @default("pending") // pending, in_progress, completed, cancelled
   estimatedPomodoros Int      @default(1)
   completedPomodoros Int      @default(0)
   projectId         String
