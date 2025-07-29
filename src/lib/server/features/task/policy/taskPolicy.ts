@@ -2,9 +2,10 @@ import type { Task, TaskStatus } from '../core/task';
 
 export function canTransitionStatus(currentStatus: TaskStatus, newStatus: TaskStatus): boolean {
   const validTransitions: Record<TaskStatus, TaskStatus[]> = {
-    pending: ['in_progress'],
-    in_progress: ['pending', 'completed'],
-    completed: ['pending'],
+    pending: ['in_progress', 'cancelled'],
+    in_progress: ['pending', 'completed', 'cancelled'],
+    completed: ['pending', 'cancelled'],
+    cancelled: ['pending'],
   };
 
   return validTransitions[currentStatus].includes(newStatus);

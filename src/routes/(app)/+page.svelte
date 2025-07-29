@@ -210,10 +210,15 @@
 
 					<div class="space-y-2">
 						{#each data.tasks.filter(t => !selectedProjectId || t.projectId === selectedProjectId) as task}
-							<div class="p-4 border rounded-lg">
+							<div class="p-4 border rounded-lg" class:opacity-60={task.status === 'cancelled'}>
 								<div class="flex justify-between items-start">
 									<div class="flex-1">
-										<h3 class="font-semibold">{task.title}</h3>
+										<h3 class="font-semibold" class:line-through={task.status === 'cancelled'}>
+											{task.title}
+											{#if task.status === 'cancelled'}
+												<span class="text-red-500 text-sm ml-2">(中止)</span>
+											{/if}
+										</h3>
 										{#if task.description}
 											<p class="text-sm text-gray-600 mt-1">{task.description}</p>
 										{/if}
@@ -227,7 +232,7 @@
 										</div>
 									</div>
 									<div class="flex items-center space-x-2">
-										{#if task.status !== 'completed' && !activeSession}
+										{#if task.status !== 'completed' && task.status !== 'cancelled' && !activeSession}
 											<form method="POST" action="?/startPomodoro" use:enhance>
 												<input type="hidden" name="taskId" value={task.id} />
 												<button
@@ -238,15 +243,28 @@
 												</button>
 											</form>
 										{/if}
-										<form method="POST" action="?/toggleTask" use:enhance>
-											<input type="hidden" name="taskId" value={task.id} />
-											<button
-												type="submit"
-												class="text-indigo-600 hover:text-indigo-900"
-											>
-												{task.status === 'completed' ? '未完了に戻す' : '完了'}
-											</button>
-										</form>
+										{#if task.status !== 'cancelled'}
+											<form method="POST" action="?/toggleTask" use:enhance>
+												<input type="hidden" name="taskId" value={task.id} />
+												<button
+													type="submit"
+													class="text-indigo-600 hover:text-indigo-900"
+												>
+													{task.status === 'completed' ? '未完了に戻す' : '完了'}
+												</button>
+											</form>
+										{/if}
+										{#if task.status !== 'in_progress'}
+											<form method="POST" action="?/cancelTask" use:enhance>
+												<input type="hidden" name="taskId" value={task.id} />
+												<button
+													type="submit"
+													class="text-red-600 hover:text-red-900"
+												>
+													{task.status === 'cancelled' ? '再開' : '中止'}
+												</button>
+											</form>
+										{/if}
 									</div>
 								</div>
 							</div>

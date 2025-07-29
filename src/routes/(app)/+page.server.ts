@@ -7,6 +7,7 @@ import { toggleTaskStatus } from '$lib/server/features/task/command/toggle-task-
 import { startPomodoroForTask } from '$lib/server/flows/start-pomodoro-for-task/handler';
 import { completeSession } from '$lib/server/features/pomodoro-session/command/complete-session/handler';
 import { PomodoroSessionRepositoryPrisma } from '$lib/server/adapter/repository/pomodoroSessionRepository.prisma';
+import { TaskRepositoryPrisma } from '$lib/server/adapter/repository/taskRepository.prisma';
 import { fail } from '@sveltejs/kit';
 import { getAuthUser } from '$lib/server/auth';
 
@@ -131,6 +132,34 @@ export const actions: Actions = {
 
 		try {
 			await completeSession({ sessionId, userId });
+			return { success: true };
+		} catch (error) {
+			if (error instanceof Error) {
+				return fail(400, { error: error.message });
+			}
+			throw error;
+		}
+	},
+
+	cancelTask: async (event) => {
+		const user = await getAuthUser(event);
+		if (!user) return fail(401, { error: '認証が必要です' });
+		
+		const data = await event.request.formData();
+		const taskId = data.get('taskId') as string;
+		const userId = user.id;
+
+		try {
+			const taskRepository = new TaskRepositoryPrisma();
+			const task = await taskRepository.findById(taskId);
+			if (!task) return fail(404, { error: 'タスクが見つかりません' });
+			
+			if (task.userId !== userId) {
+				return fail(403, { error: 'このタスクを更新する権限がありません' });
+			}
+			
+			const newStatus = task.status === 'cancelled' ? 'pending' : 'cancelled';
+			await taskRepository.updateStatus(taskId, newStatus);
 			return { success: true };
 		} catch (error) {
 			if (error instanceof Error) {
