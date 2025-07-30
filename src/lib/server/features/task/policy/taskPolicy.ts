@@ -28,5 +28,5 @@ export function canDeleteTask(task: Task): boolean {
 }
 
 export function canToggleStatus(task: Task): boolean {
-  return task.status !== 'in_progress'; // 進行中のタスクは直接完了にできない
+  return task.status !== 'in_progress' && task.status !== 'cancelled'; // 進行中と中止のタスクは直接完了にできない
 }
