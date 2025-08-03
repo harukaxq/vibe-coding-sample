@@ -4,6 +4,8 @@ import { getTasks } from '$lib/server/features/task/query/get-tasks/handler';
 import { createProject } from '$lib/server/features/project/command/create-project/handler';
 import { createTaskWithProject } from '$lib/server/flows/create-task-with-project/handler';
 import { toggleTaskStatus } from '$lib/server/features/task/command/toggle-task-status/handler';
+import { updateTaskStatus } from '$lib/server/features/task/command/update-task-status/handler';
+import type { TaskStatus } from '$lib/server/features/task/core/task';
 import { startPomodoroForTask } from '$lib/server/flows/start-pomodoro-for-task/handler';
 import { completeSession } from '$lib/server/features/pomodoro-session/command/complete-session/handler';
 import { PomodoroSessionRepositoryPrisma } from '$lib/server/adapter/repository/pomodoroSessionRepository.prisma';
@@ -131,6 +133,26 @@ export const actions: Actions = {
 
 		try {
 			await completeSession({ sessionId, userId });
+			return { success: true };
+		} catch (error) {
+			if (error instanceof Error) {
+				return fail(400, { error: error.message });
+			}
+			throw error;
+		}
+	},
+
+	updateTaskStatus: async (event) => {
+		const user = await getAuthUser(event);
+		if (!user) return fail(401, { error: '認証が必要です' });
+		
+		const data = await event.request.formData();
+		const taskId = data.get('taskId') as string;
+		const status = data.get('status') as TaskStatus;
+		const userId = user.id;
+
+		try {
+			await updateTaskStatus({ taskId, status, userId });
 			return { success: true };
 		} catch (error) {
 			if (error instanceof Error) {

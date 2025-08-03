@@ -213,7 +213,20 @@
 							<div class="p-4 border rounded-lg">
 								<div class="flex justify-between items-start">
 									<div class="flex-1">
-										<h3 class="font-semibold">{task.title}</h3>
+										<div class="flex items-center space-x-2">
+											<h3 class="font-semibold">{task.title}</h3>
+											<span class="px-2 py-1 text-xs rounded-full {
+												task.status === 'completed' ? 'bg-green-100 text-green-800' :
+												task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+												task.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+												'bg-gray-100 text-gray-800'
+											}">
+												{task.status === 'pending' ? '未着手' :
+												 task.status === 'in_progress' ? '進行中' :
+												 task.status === 'completed' ? '完了' :
+												 task.status === 'cancelled' ? '中止' : task.status}
+											</span>
+										</div>
 										{#if task.description}
 											<p class="text-sm text-gray-600 mt-1">{task.description}</p>
 										{/if}
@@ -227,7 +240,7 @@
 										</div>
 									</div>
 									<div class="flex items-center space-x-2">
-										{#if task.status !== 'completed' && !activeSession}
+										{#if task.status !== 'completed' && task.status !== 'cancelled' && !activeSession}
 											<form method="POST" action="?/startPomodoro" use:enhance>
 												<input type="hidden" name="taskId" value={task.id} />
 												<button
@@ -238,14 +251,19 @@
 												</button>
 											</form>
 										{/if}
-										<form method="POST" action="?/toggleTask" use:enhance>
+										<form method="POST" action="?/updateTaskStatus" use:enhance>
 											<input type="hidden" name="taskId" value={task.id} />
-											<button
-												type="submit"
-												class="text-indigo-600 hover:text-indigo-900"
+											<select 
+												name="status" 
+												value={task.status}
+												on:change={(e) => e.currentTarget.form?.requestSubmit()}
+												class="text-sm border border-gray-300 rounded px-2 py-1"
 											>
-												{task.status === 'completed' ? '未完了に戻す' : '完了'}
-											</button>
+												<option value="pending">未着手</option>
+												<option value="in_progress">進行中</option>
+												<option value="completed">完了</option>
+												<option value="cancelled">中止</option>
+											</select>
 										</form>
 									</div>
 								</div>
