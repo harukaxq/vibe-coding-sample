@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Othello</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; background: #1a1a2e; font-family: 'Segoe UI', sans-serif; color: #fff;
+  }
+  h1 { margin-bottom: 12px; font-size: 28px; letter-spacing: 2px; }
+  #info {
+    display: flex; gap: 32px; margin-bottom: 12px; font-size: 18px; align-items: center;
+  }
+  .score { display: flex; align-items: center; gap: 8px; }
+  .disc-icon {
+    width: 20px; height: 20px; border-radius: 50%; display: inline-block;
+  }
+  .disc-icon.black { background: #222; border: 2px solid #888; }
+  .disc-icon.white { background: #eee; border: 2px solid #888; }
+  #turn { font-weight: bold; font-size: 16px; }
+  #board {
+    display: grid; grid-template-columns: repeat(8, 1fr);
+    width: 480px; height: 480px; background: #0e6b31; border: 4px solid #333;
+    border-radius: 6px; box-shadow: 0 8px 32px rgba(0,0,0,.5);
+  }
+  .cell {
+    width: 60px; height: 60px; border: 1px solid #0a5526;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    position: relative;
+  }
+  .cell:hover { background: rgba(255,255,255,.08); }
+  .cell.hint::after {
+    content: ''; position: absolute; width: 16px; height: 16px;
+    border-radius: 50%; background: rgba(255,255,255,.25);
+  }
+  .disc {
+    width: 46px; height: 46px; border-radius: 50%;
+    transition: transform .3s ease; box-shadow: 0 2px 6px rgba(0,0,0,.4);
+  }
+  .disc.black { background: radial-gradient(circle at 35% 35%, #555, #111); }
+  .disc.white { background: radial-gradient(circle at 35% 35%, #fff, #bbb); }
+  @keyframes pop {
+    0% { transform: scale(0); } 60% { transform: scale(1.15); } 100% { transform: scale(1); }
+  }
+  .disc.placed { animation: pop .3s ease; }
+  @keyframes flip {
+    0% { transform: scaleX(1); } 50% { transform: scaleX(0); } 100% { transform: scaleX(1); }
+  }
+  .disc.flipped { animation: flip .4s ease; }
+  #message {
+    margin-top: 16px; font-size: 22px; font-weight: bold; min-height: 30px;
+  }
+  #restart {
+    margin-top: 12px; padding: 10px 28px; font-size: 16px; border: none;
+    border-radius: 6px; background: #16a085; color: #fff; cursor: pointer;
+    transition: background .2s;
+  }
+  #restart:hover { background: #1abc9c; }
+</style>
+</head>
+<body>
+<h1>Othello</h1>
+<div id="info">
+  <div class="score"><span class="disc-icon black"></span><span id="blackCount">2</span></div>
+  <div id="turn"></div>
+  <div class="score"><span class="disc-icon white"></span><span id="whiteCount">2</span></div>
+</div>
+<div id="board"></div>
+<div id="message"></div>
+<button id="restart" onclick="init()">Restart</button>
+<script>
+const EMPTY = 0, BLACK = 1, WHITE = 2;
+const DIRS = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+let board, current, gameOver;
+
+function init() {
+  board = Array.from({length: 8}, () => Array(8).fill(EMPTY));
+  board[3][3] = WHITE; board[3][4] = BLACK;
+  board[4][3] = BLACK; board[4][4] = WHITE;
+  current = BLACK;
+  gameOver = false;
+  document.getElementById('message').textContent = '';
+  render();
+}
+
+function inBounds(r, c) { return r >= 0 && r < 8 && c >= 0 && c < 8; }
+
+function getFlips(r, c, player) {
+  if (board[r][c] !== EMPTY) return [];
+  const opp = player === BLACK ? WHITE : BLACK;
+  const allFlips = [];
+  for (const [dr, dc] of DIRS) {
+    const flips = [];
+    let nr = r + dr, nc = c + dc;
+    while (inBounds(nr, nc) && board[nr][nc] === opp) {
+      flips.push([nr, nc]);
+      nr += dr; nc += dc;
+    }
+    if (flips.length > 0 && inBounds(nr, nc) && board[nr][nc] === player) {
+      allFlips.push(...flips);
+    }
+  }
+  return allFlips;
+}
+
+function hasValidMove(player) {
+  for (let r = 0; r < 8; r++)
+    for (let c = 0; c < 8; c++)
+      if (getFlips(r, c, player).length > 0) return true;
+  return false;
+}
+
+function place(r, c) {
+  if (gameOver) return;
+  const flips = getFlips(r, c, current);
+  if (flips.length === 0) return;
+  board[r][c] = current;
+  for (const [fr, fc] of flips) board[fr][fc] = current;
+  render(r, c, flips);
+  nextTurn();
+}
+
+function nextTurn() {
+  const opp = current === BLACK ? WHITE : BLACK;
+  if (hasValidMove(opp)) {
+    current = opp;
+    updateInfo();
+    showHints();
+    return;
+  }
+  if (hasValidMove(current)) {
+    const name = current === BLACK ? 'White' : 'Black';
+    document.getElementById('message').textContent = name + ' has no moves. Skipped.';
+    updateInfo();
+    showHints();
+    return;
+  }
+  endGame();
+}
+
+function endGame() {
+  gameOver = true;
+  const b = countDiscs(BLACK), w = countDiscs(WHITE);
+  let msg;
+  if (b > w) msg = 'Black wins!';
+  else if (w > b) msg = 'White wins!';
+  else msg = 'Draw!';
+  document.getElementById('message').textContent = msg;
+  clearHints();
+}
+
+function countDiscs(player) {
+  let n = 0;
+  for (let r = 0; r < 8; r++)
+    for (let c = 0; c < 8; c++)
+      if (board[r][c] === player) n++;
+  return n;
+}
+
+function updateInfo() {
+  document.getElementById('blackCount').textContent = countDiscs(BLACK);
+  document.getElementById('whiteCount').textContent = countDiscs(WHITE);
+  const name = current === BLACK ? 'Black' : 'White';
+  document.getElementById('turn').textContent = name + "'s turn";
+}
+
+function render(placedR, placedC, flips) {
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML = '';
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.addEventListener('click', () => place(r, c));
+      if (board[r][c] !== EMPTY) {
+        const disc = document.createElement('div');
+        const color = board[r][c] === BLACK ? 'black' : 'white';
+        disc.className = 'disc ' + color;
+        if (placedR === r && placedC === c) disc.classList.add('placed');
+        if (flips && flips.some(([fr, fc]) => fr === r && fc === c)) disc.classList.add('flipped');
+        cell.appendChild(disc);
+      }
+      boardEl.appendChild(cell);
+    }
+  }
+  updateInfo();
+  showHints();
+}
+
+function showHints() {
+  clearHints();
+  if (gameOver) return;
+  const cells = document.querySelectorAll('.cell');
+  for (let r = 0; r < 8; r++)
+    for (let c = 0; c < 8; c++)
+      if (getFlips(r, c, current).length > 0)
+        cells[r * 8 + c].classList.add('hint');
+}
+
+function clearHints() {
+  document.querySelectorAll('.cell.hint').forEach(el => el.classList.remove('hint'));
+}
+
+init();
+</script>
+</body>
+</html>
